@@ -79,7 +79,8 @@ namespace NotionMono.Parser
             string buf = cost.Text;
             buf = buf.Replace(" ", "");
             buf = buf.Replace("₴", "");
-            buf = buf.Replace(".", ",");
+            if(OperatingSystem.IsWindows())
+                buf = buf.Replace(".", ",");
             if (!double.TryParse(buf, out jarData.Value))
                 Program.Log("Parse failed in parseJar");
             IWebElement pngPath = _driver.FindElement(By.XPath("//div[@id='jar-state']//div[@class='img']"));
