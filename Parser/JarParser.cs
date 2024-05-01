@@ -15,16 +15,10 @@ namespace NotionMono.Parser
     {
         List<string> jarURLs = new();
         public Action<JarData>? jarUpdate;
-        IWebDriver? _driver;
+        IWebDriver _driver;
         Timer? timer;
 
-        public void ChangeStrings(List<string> strings) 
-        {
-            jarURLs.Clear();
-            jarURLs = strings;
-        }
-
-        public void Init(TimeSpan timerPeriod) 
+        public JarParser() 
         {
             var options = new ChromeOptions();
             options.AddArgument("--headless");
@@ -34,7 +28,16 @@ namespace NotionMono.Parser
             options.AddArgument("--log-level=3");
             options.AddArgument("--output=/dev/null");
             _driver = new ChromeDriver(options);
+        }
 
+        public void ChangeStrings(List<string> strings) 
+        {
+            jarURLs.Clear();
+            jarURLs = strings;
+        }
+
+        public void Init(TimeSpan timerPeriod) 
+        {
             timer = new Timer(callback: CheckPage, null, TimeSpan.Zero, timerPeriod);
         }
 
@@ -44,7 +47,7 @@ namespace NotionMono.Parser
             try
             {
                 foreach (string url in jarURLs)
-                    jarUpdate.Invoke(parseJar(url));
+                    jarUpdate?.Invoke(parseJar(url));
 
             }
             catch (Exception ex)

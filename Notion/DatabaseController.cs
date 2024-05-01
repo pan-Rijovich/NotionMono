@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace NotionMono.Notion
 {
-    public class DatabaseController
+    public class DatabaseController(NotionClient client)
     {
-        private NotionClient _client;
+        private readonly NotionClient _client = client;
         private Database? _db;
 
         const string BalanceFieldName = "Balance"; 
@@ -18,10 +18,6 @@ namespace NotionMono.Notion
         const string DescriptionFieldName = "Description";
         const string ImageFieldName = "Image";
         const string LinkFieldName = "Link";
-        public DatabaseController(NotionClient client) 
-        {
-            _client = client;
-        }
 
         public void InitDB(string dbName)
         {
@@ -42,6 +38,12 @@ namespace NotionMono.Notion
                     _db = (Database)result;
             }
 
+            if (_db is null) 
+            {
+                Program.Log("DatabaseController: db not found; name: " + dbName);
+                return;
+            }
+
             foreach (var param in _db.Properties) 
             {
                Program.Log(param.Key + ": " + param.Value);
@@ -51,7 +53,12 @@ namespace NotionMono.Notion
         Page CreatePage(PagesCreateParameters param)
         {
             var task = _client?.Pages.CreateAsync(param);
-            Task.WaitAll(task);
+            if (task is null) 
+            {
+                Program.Log("DBController: page create failed");
+                return new Page();
+            }
+            task.Wait();
             return task.Result;
         }
 
@@ -60,9 +67,9 @@ namespace NotionMono.Notion
             switch (p)
             {
                 case RichTextPropertyValue richTextPropertyValue:
-                    return richTextPropertyValue.RichText.FirstOrDefault()?.PlainText;
+                    return richTextPropertyValue.RichText.FirstOrDefault().PlainText;
                 case NumberPropertyValue numberPropertyValue:
-                    return numberPropertyValue.Number;
+                    return numberPropertyValue.Number.Value;
                 case FilesPropertyValue filesPropertyValue:
                     ExternalFileWithName file = filesPropertyValue.Files.First() as ExternalFileWithName;
                     return file;
@@ -80,10 +87,17 @@ namespace NotionMono.Notion
             if (_db is null)
                 return -1;
 
-            DatabasesQueryParameters param = new DatabasesQueryParameters();
-            param.Filter = new RichTextFilter(TitleFieldName, contains: jarData.Name);
+            DatabasesQueryParameters param = new DatabasesQueryParameters
+            {
+                Filter = new RichTextFilter(TitleFieldName, contains: jarData.Name)
+            };
             var task = _client?.Databases.QueryAsync(_db?.Id, param);
-            Task.WaitAll(task);
+            if (task is null) 
+            {
+                Program.Log("DBController: failed check jar");
+                return -1;
+            }
+            task.Wait();
 
             return task.Result.Results.Count;
         }
@@ -93,8 +107,10 @@ namespace NotionMono.Notion
             if (_db is null)
                 return;
 
-            DatabasesQueryParameters param = new DatabasesQueryParameters();
-            param.Filter = new RichTextFilter(TitleFieldName, contains: jarData.Name);
+            DatabasesQueryParameters param = new DatabasesQueryParameters
+            {
+                Filter = new RichTextFilter(TitleFieldName, contains: jarData.Name)
+            };
             Page page = (await _client.Databases.QueryAsync(_db?.Id, param)).Results[0];
             PagesUpdateParameters parameters = new PagesUpdateParameters();
             parameters.Properties = new Dictionary<string, PropertyValue>();

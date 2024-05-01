@@ -38,12 +38,23 @@ class Program
 
             // Десериализуем JSON в объект класса Settings
             prog = JsonConvert.DeserializeObject<Program>(json);
+            if (prog == null)
+            {
+                Program.Log("Program load filed");
+                _streamWriter.Flush();
+                return;
+            }
 
             Program.Log("Init parametres:");
-            Program.Log($"secret: {prog.secret}");
+            Program.Log($"secret: {prog.secret?[0..6]}");
             Program.Log($"dbName: {prog.dbName}");
             Program.Log($"periodsec: {prog.period_sec}");
             Program.Log("Urls:");
+            if (prog.urls is null) 
+            {
+                Program.Log("Program failed parse jar`s urls");
+                return;
+            }
             foreach (var url in prog.urls)
             {
                 Program.Log($"{url}");
@@ -63,6 +74,11 @@ class Program
 
     void InitDriver() 
     {
+        if (dbName is null || urls is null || period_sec is null) 
+        {
+            Program.Log("Program: settings parse failed");
+            return;
+        }
         ClientOptions clientOptions = new();
         clientOptions.AuthToken = secret;
         NotionClient client = NotionClientFactory.Create(clientOptions);
@@ -71,7 +87,7 @@ class Program
 
         _jarParser.jarUpdate += UpdateJar;
         _jarParser.ChangeStrings(urls);
-        _jarParser.Init(TimeSpan.FromSeconds(double.Parse(period_sec.ToString())));
+        _jarParser.Init(TimeSpan.FromSeconds(double.Parse(period_sec.Value.ToString())));
         
         _streamWriter.AutoFlush = true;
         Console.WriteLine("Нажмите любую клавишу для остановки программы.");
@@ -82,6 +98,11 @@ class Program
 
     void UpdateJar(JarData jarData) 
     {
+        if (_controller is null)
+        {
+            Log("Program: controller is null");
+            return;
+        }
         if (!_jars.ContainsKey(jarData.Name))
         {
             if (_controller.NotionCheckJar(jarData) > 0)

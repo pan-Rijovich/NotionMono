@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# CA1864: Предпочитать метод "IDictionary.TryAdd(TKey, TValue)"
+dotnet_diagnostic.CA1864.severity = warning
