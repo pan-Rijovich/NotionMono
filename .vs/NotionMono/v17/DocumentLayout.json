@@ -42,8 +42,7 @@
               "RelativeToolTip": "bin\\Debug\\net8.0\\settings.json",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAA4AAAARAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2024-05-01T09:15:50.061Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-05-01T09:15:50.061Z"
             },
             {
               "$type": "Document",
@@ -54,8 +53,7 @@
               "ToolTip": "C:\\Users\\Public\\Projects\\NotionMono\\NotionMono.csproj",
               "RelativeToolTip": "NotionMono.csproj",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2024-04-30T18:46:29.014Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-04-30T18:46:29.014Z"
             },
             {
               "$type": "Document",
@@ -67,8 +65,7 @@
               "RelativeToolTip": "Parser\\JarParser.cs",
               "ViewState": "AQIAACUAAAAAAAAAAAAWwBEAAAASAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-04-30T15:06:32.203Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-04-30T15:06:32.203Z"
             },
             {
               "$type": "Document",
@@ -80,8 +77,7 @@
               "RelativeToolTip": "Notion\\DatabaseController.cs",
               "ViewState": "AQIAAEAAAAAAAAAAAAAewEwAAAAbAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-04-30T12:44:02.177Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-04-30T12:44:02.177Z"
             },
             {
               "$type": "Document",
@@ -89,9 +85,9 @@
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\Public\\Projects\\NotionMono\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "C:\\Users\\Public\\Projects\\NotionMono\\Program.cs",
-              "RelativeToolTip": "Program.cs",
-              "ViewState": "AQIAACQAAAAAAAAAAAAYwFsAAAAnAAAA",
+              "ToolTip": "C:\\Users\\Public\\Projects\\NotionMono\\Program.cs*",
+              "RelativeToolTip": "Program.cs*",
+              "ViewState": "AQIAAFEAAAAAAAAAAAAgwGMAAAAJAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-04-29T19:47:49.299Z",
               "EditorCaption": ""

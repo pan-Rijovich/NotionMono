@@ -4,6 +4,7 @@ using NotionMono.Parser;
 using NotionMono.Notion;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
+using System.ComponentModel;
 
 class Program
 {
@@ -90,6 +91,13 @@ class Program
         _jarParser.Init(TimeSpan.FromSeconds(double.Parse(period_sec.Value.ToString())));
         
         _streamWriter.AutoFlush = true;
+
+        // Бесконечный цикл с ожиданием без блокировки потока
+        while (true)
+        {
+            // Вызываем Thread.Sleep для ожидания без блокировки
+            Thread.Sleep(Timeout.Infinite);
+        }
     }
 
     ~Program() 
