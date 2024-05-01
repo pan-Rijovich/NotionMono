@@ -87,10 +87,8 @@ namespace NotionMono.Notion
             if (_db is null)
                 return -1;
 
-            DatabasesQueryParameters param = new DatabasesQueryParameters
-            {
-                Filter = new RichTextFilter(TitleFieldName, contains: jarData.Name)
-            };
+            DatabasesQueryParameters param = new();
+            param.Filter = new RichTextFilter(TitleFieldName, contains: jarData.Name);
             var task = _client?.Databases.QueryAsync(_db?.Id, param);
             if (task is null) 
             {

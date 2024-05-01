@@ -90,9 +90,10 @@ class Program
         _jarParser.Init(TimeSpan.FromSeconds(double.Parse(period_sec.Value.ToString())));
         
         _streamWriter.AutoFlush = true;
-        Console.WriteLine("Нажмите любую клавишу для остановки программы.");
-        Console.ReadKey();
+    }
 
+    ~Program() 
+    {
         _jarParser.StopTimer();
     }
 
