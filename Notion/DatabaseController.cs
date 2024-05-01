@@ -17,6 +17,7 @@ namespace NotionMono.Notion
         const string TitleFieldName = "Name";
         const string DescriptionFieldName = "Description";
         const string ImageFieldName = "Image";
+        const string LinkFieldName = "Link";
         public DatabaseController(NotionClient client) 
         {
             _client = client;
@@ -26,12 +27,18 @@ namespace NotionMono.Notion
         {
             SearchParameters searchParameters = new SearchParameters();
             searchParameters.Query = dbName;
+
             var search = _client.Search.SearchAsync(searchParameters);
 
             foreach (var result in search.Result.Results) 
             {
                 if(result is Database)
                     _db = (Database)result;
+            }
+
+            foreach (var param in _db.Properties) 
+            {
+               Program.Log(param.Key + ": " + param.Value);
             }
         }
 
@@ -55,6 +62,8 @@ namespace NotionMono.Notion
                     return file;
                 case TitlePropertyValue titlePropertyValue:
                     return titlePropertyValue.Title.FirstOrDefault()?.PlainText;
+                case UrlPropertyValue urlPropertyValue:
+                    return urlPropertyValue.Url;
                 default:
                     return "";
             }
@@ -90,7 +99,6 @@ namespace NotionMono.Notion
                 value.Number = jarData.Value;
                 parameters.Properties.Add(BalanceFieldName,value);
                 Program.Log($"Changed: {(double)GetValue(page.Properties[BalanceFieldName])} -> {jarData.Value} in {jarData.Name}");
-                Console.WriteLine($"Changed: {(double)GetValue(page.Properties[BalanceFieldName])} -> {jarData.Value} in {jarData.Name}");
             }
             if ((string)GetValue(page.Properties[DescriptionFieldName]) != jarData.Description) 
             {
@@ -102,8 +110,7 @@ namespace NotionMono.Notion
                 text.RichText = [description];
 
                 parameters.Properties.Add(DescriptionFieldName, text);
-                Program.Log($"Changed: {(string)GetValue(page.Properties[DescriptionFieldName])} -> {jarData.Description} in {jarData.Name}");
-                Console.WriteLine($"Changed: {(string)GetValue(page.Properties[DescriptionFieldName])} -> {jarData.Description} in {jarData.Name}");
+                Program.Log($"Changed: {((string)GetValue(page.Properties[DescriptionFieldName]))[0..20]} -> {jarData.Description[0..20]} in {jarData.Name}");
             }
             if (((ExternalFileWithName)GetValue(page.Properties[ImageFieldName])).External.Url != jarData.ImgPath) 
             {
@@ -118,7 +125,15 @@ namespace NotionMono.Notion
                 parameters.Properties.Add(ImageFieldName, files);
 
                 Program.Log($"Changed: {((ExternalFileWithName)GetValue(page.Properties[ImageFieldName])).External.Url} -> {jarData.ImgPath} in {jarData.Name}");
-                Console.WriteLine($"Changed: {((ExternalFileWithName)GetValue(page.Properties[ImageFieldName])).External.Url} -> {jarData.ImgPath} in {jarData.Name}");
+            }
+            if ((string)GetValue(page.Properties[LinkFieldName]) != jarData.Link) 
+            {
+                UrlPropertyValue url = new();
+                url.Url = jarData.Link;
+
+                parameters.Properties.Add(LinkFieldName, url);
+
+                Program.Log($"Changed: {(string)GetValue(page.Properties[LinkFieldName])} -> {jarData.Link} in {jarData.Name}");
             }
 
             if (parameters.Properties.Count > 0)
@@ -158,6 +173,9 @@ namespace NotionMono.Notion
             FilesPropertyValue files = new();
             files.Files = [file];
 
+            UrlPropertyValue url = new();
+            url.Url = jarData.Link; 
+
             var creat = new PagesCreateParameters();
             creat.Parent = new DatabaseParentInput { DatabaseId = _db.Id };
             creat.Properties = new Dictionary<string, PropertyValue>
@@ -165,15 +183,15 @@ namespace NotionMono.Notion
                             { DescriptionFieldName, description },
                             { BalanceFieldName, value },
                             { ImageFieldName, files },
-                            { TitleFieldName, title }
+                            { TitleFieldName, title },
+                            { LinkFieldName, url}
                         };
 
             var response = CreatePage(creat);
 
             if (response.Object is ObjectType.Page)
             {
-                Program.Log($"added new jar: {jarData.Name}, description: {jarData.Description}, value: {jarData.Value}, imgPath: {jarData.ImgPath}");
-                Console.WriteLine($"added new jar: {jarData.Name}, description: {jarData.Description}, value: {jarData.Value}, imgPath: {jarData.ImgPath}");
+                Program.Log($"added new jar: {jarData.Name}\ndescription: {jarData.Description}\nvalue: {jarData.Value}\nimgPath: {jarData.ImgPath}");
                 return true;
             }
             else

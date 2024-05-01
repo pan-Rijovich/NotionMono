@@ -8,5 +8,6 @@ namespace NotionMono.Parser
         public string Name;
         public string Description;
         public double Value;
+        public string Link;
     }
 }

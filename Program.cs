@@ -10,7 +10,7 @@ class Program
     Dictionary<string, JarData> _jars = new Dictionary<string, JarData>();
     DatabaseController? _controller;
     JarParser _jarParser = new();
-    static StreamWriter _streamWriter = new("log.txt");
+    static StreamWriter _streamWriter = new("log.txt", append: true);
 
     [JsonProperty("secret")]
     public readonly string? secret;
@@ -22,7 +22,8 @@ class Program
     public readonly List<string>? urls;
 
     public Program() 
-    { }
+    {
+    }
 
     static void Main() 
     {
@@ -37,6 +38,16 @@ class Program
 
             // Десериализуем JSON в объект класса Settings
             prog = JsonConvert.DeserializeObject<Program>(json);
+
+            Program.Log("Init parametres:");
+            Program.Log($"secret: {prog.secret}");
+            Program.Log($"dbName: {prog.dbName}");
+            Program.Log($"periodsec: {prog.period_sec}");
+            Program.Log("Urls:");
+            foreach (var url in prog.urls)
+            {
+                Program.Log($"{url}");
+            }
         }
         catch (FileNotFoundException)
         {
@@ -62,6 +73,7 @@ class Program
         _jarParser.ChangeStrings(urls);
         _jarParser.Init(TimeSpan.FromSeconds(double.Parse(period_sec.ToString())));
         
+        _streamWriter.AutoFlush = true;
         Console.WriteLine("Нажмите любую клавишу для остановки программы.");
         Console.ReadKey();
 

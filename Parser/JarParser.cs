@@ -56,6 +56,7 @@ namespace NotionMono.Parser
         private JarData parseJar(string url) 
         {
             JarData jarData = new();
+            jarData.Link = url;
 
             _driver.Navigate().GoToUrl(url);
 
@@ -76,6 +77,7 @@ namespace NotionMono.Parser
             jarData.Description = text.Text;
             IWebElement cost = _driver.FindElement(By.CssSelector(".stats-data-value"));
             //Console.WriteLine("Cost: " + cost.Text);
+
             string buf = cost.Text;
             buf = buf.Replace(" ", "");
             buf = buf.Replace("₴", "");
@@ -83,6 +85,7 @@ namespace NotionMono.Parser
                 buf = buf.Replace(".", ",");
             if (!double.TryParse(buf, out jarData.Value))
                 Program.Log("Parse failed in parseJar");
+
             IWebElement pngPath = _driver.FindElement(By.XPath("//div[@id='jar-state']//div[@class='img']"));
             Regex regex = new Regex(@"url\(""(.+?)""\)");
             // Поиск URL в строке CSS-кода
