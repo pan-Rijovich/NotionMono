@@ -28,11 +28,17 @@ namespace NotionMono.Notion
             SearchParameters searchParameters = new SearchParameters();
             searchParameters.Query = dbName;
 
+            SearchFilter filter = new SearchFilter();
+            filter.Value = SearchObjectType.Database;
+            searchParameters.Filter = filter;
+
             var search = _client.Search.SearchAsync(searchParameters);
 
+            Program.Log("Found jars:");
             foreach (var result in search.Result.Results) 
             {
-                if(result is Database)
+                Program.Log("Title: " + ((Database)result).Title.FirstOrDefault()?.PlainText);
+                if(result is Database && ((Database)result).Title.FirstOrDefault()?.PlainText == dbName)
                     _db = (Database)result;
             }
 
