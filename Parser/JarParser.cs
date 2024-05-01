@@ -43,6 +43,7 @@ namespace NotionMono.Parser
 
         void CheckPage(object? state)
         {
+            Program.Log("update pages");
             // URL страницы, которую вы хотите парсить
             try
             {
