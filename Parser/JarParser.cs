@@ -6,12 +6,12 @@ using System.Text.RegularExpressions;
 
 namespace NotionMono.Parser
 {
-    public class JarParser
+    public partial class JarParser
     {
-        List<string> jarURLs = new();
         public Action<JarData>? jarUpdate;
         FirefoxDriver _driver;
-        FirefoxOptions options;
+        readonly FirefoxOptions options;
+        List<string> jarURLs = [];
         Timer? timer;
 
         public JarParser() 
@@ -36,11 +36,11 @@ namespace NotionMono.Parser
         void CheckPage(object? state)
         {
             Program.Log("update pages");
-            // URL страницы, которую вы хотите парсить
 
             for (int i = 0; i < jarURLs.Count; i++)
             {
-                JarData? jarData = parseJar(jarURLs[i]);
+                JarData? jarData = ParseJar(jarURLs[i]);
+
                 if (jarData != null)
                 {
                     Program.Log("Check page success: " + jarURLs[i] + $"; current: {i+1}/{jarURLs.Count}");
@@ -51,19 +51,21 @@ namespace NotionMono.Parser
             }
         }
 
-        private JarData? parseJar(string url) 
+        private JarData? ParseJar(string url) 
         {
-            JarData jarData = new();
-            jarData.Link = url;
+            JarData jarData = new()
+            {
+                Link = url
+            };
 
             for (int i = 0; i < 3; i++)
             {
                 try
                 {
                     _driver.Navigate().GoToUrl(url);
-                    // Используем явное ожидание для ожидания загрузки элемента на странице
-                    WebDriverWait wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
-                    Func<IWebDriver, bool> waitForElement = new Func<IWebDriver, bool>((IWebDriver Web) =>
+
+                    WebDriverWait wait = new(_driver, TimeSpan.FromSeconds(10));
+                    Func<IWebDriver, bool> waitForElement = new((IWebDriver Web) =>
                     {
                         Web.FindElement(By.CssSelector(".description-box"));
                         return true;
@@ -71,14 +73,12 @@ namespace NotionMono.Parser
                     wait.Until(waitForElement);
 
                     IWebElement title = _driver.FindElement(By.CssSelector(".field.name"));
-                    //Console.WriteLine("Name: " + title.Text);
                     jarData.Name = title.Text;
-                    IWebElement text = _driver.FindElement(By.CssSelector(".description-box"));
-                    //Console.WriteLine("Text: " + text.Text);
-                    jarData.Description = text.Text;
-                    IWebElement cost = _driver.FindElement(By.CssSelector(".stats-data-value"));
-                    //Console.WriteLine("Cost: " + cost.Text);
 
+                    IWebElement text = _driver.FindElement(By.CssSelector(".description-box"));
+                    jarData.Description = text.Text;
+
+                    IWebElement cost = _driver.FindElement(By.CssSelector(".stats-data-value"));
                     string buf = cost.Text;
                     buf = buf.Replace(" ", "");
                     buf = buf.Replace("₴", "");
@@ -88,11 +88,11 @@ namespace NotionMono.Parser
                         Program.Log("Parse failed in parseJar");
 
                     IWebElement pngPath = _driver.FindElement(By.XPath("//div[@id='jar-state']//div[@class='img']"));
-                    Regex regex = new Regex(@"url\(""(.+?)""\)");
-                    // Поиск URL в строке CSS-кода
+                    Regex regex = ClearLinkRegex();
+
                     Match match = regex.Match(pngPath.GetAttribute("style"));
                     jarData.ImgPath = match.Groups[1].Value;
-                    //Console.WriteLine("Image: " + match.Groups[1].Value);
+
                     Thread.Sleep(100);
                     break;
                 }
@@ -116,5 +116,8 @@ namespace NotionMono.Parser
             _driver.Quit();
             timer?.Dispose();
         }
+
+        [GeneratedRegex(@"url\(""(.+?)""\)")]
+        private static partial Regex ClearLinkRegex();
     }
 }
