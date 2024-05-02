@@ -1,17 +1,15 @@
-﻿// See https://aka.ms/new-console-template for more information
-using Notion.Client;
+﻿using Notion.Client;
 using NotionMono.Parser;
 using NotionMono.Notion;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
-using System.ComponentModel;
 
-class Program
+class Program()
 {
-    Dictionary<string, JarData> _jars = new Dictionary<string, JarData>();
-    DatabaseController? _controller;
-    JarParser _jarParser = new();
-    static StreamWriter _streamWriter = new("log.txt", append: true);
+    readonly Dictionary<string, JarData> _jars = [];
+    DatabaseController? _dbController;
+    readonly JarParser _jarParser = new();
+    static readonly StreamWriter _streamWriter = new("log.txt", append: true);
 
     [JsonProperty("secret")]
     public readonly string? secret;
@@ -22,15 +20,10 @@ class Program
     [JsonProperty("jars")]
     public readonly List<string>? urls;
 
-    public Program() 
-    {
-    }
-
     static void Main() 
     {
         string filePath = "settings.json";
-
-        Program? prog = null;
+        Program? prog;
 
         try
         {
@@ -41,50 +34,40 @@ class Program
             prog = JsonConvert.DeserializeObject<Program>(json);
             if (prog == null)
             {
-                Program.Log("Program load filed");
+                Log("Program load filed");
                 _streamWriter.Flush();
                 return;
             }
-
-            Program.Log("Init parametres:");
-            Program.Log($"secret: {HideSecret(prog.secret)}");
-            Program.Log($"dbName: {prog.dbName}");
-            Program.Log($"periodsec: {prog.period_sec}");
-            Program.Log("Urls:");
-            if (prog.urls is null) 
-            {
-                Program.Log("Program failed parse jar`s urls");
-                return;
-            }
-            foreach (var url in prog.urls)
-            {
-                Program.Log($"{url}");
-            }
+            prog.InitLog();
         }
         catch (FileNotFoundException)
         {
             Console.WriteLine("Файл не найден");
+            return;
         }
         catch (Exception ex)
         {
             Console.WriteLine("Произошла ошибка: " + ex.Message);
+            return;
         }
-        if(prog != null)
-            prog.InitDriver();
+
+        prog.InitDriver();
     }
 
     void InitDriver() 
     {
         if (dbName is null || urls is null || period_sec is null) 
         {
-            Program.Log("Program: settings parse failed");
+            Log("Program: settings parse failed");
             return;
         }
-        ClientOptions clientOptions = new();
-        clientOptions.AuthToken = secret;
+        ClientOptions clientOptions = new()
+        {
+            AuthToken = secret
+        };
         NotionClient client = NotionClientFactory.Create(clientOptions);
-        _controller = new DatabaseController(client);
-        _controller.InitDB(dbName);
+        _dbController = new DatabaseController(client);
+        _dbController.InitDB(dbName);
 
         _jarParser.jarUpdate += UpdateJar;
         _jarParser.ChangeStrings(urls);
@@ -92,10 +75,8 @@ class Program
         
         _streamWriter.AutoFlush = true;
 
-        // Бесконечный цикл с ожиданием без блокировки потока
         while (true)
         {
-            // Вызываем Thread.Sleep для ожидания без блокировки
             Thread.Sleep(Timeout.Infinite);
         }
     }
@@ -107,34 +88,29 @@ class Program
         return secret[0..7] + new string('*', secret.Length-8);
     }
 
-    ~Program() 
-    {
-        _jarParser.StopTimer();
-    }
-
     void UpdateJar(JarData jarData) 
     {
-        if (_controller is null)
+        if (_dbController is null)
         {
             Log("Program: controller is null");
             return;
         }
         if (!_jars.ContainsKey(jarData.Name))
         {
-            if (_controller.NotionCheckJar(jarData) > 0)
+            if (_dbController.NotionCheckJar(jarData) > 0)
             {
                 _jars.Add(jarData.Name, jarData);
-                _controller.NotionUpdateJar(jarData);
+                _dbController.NotionUpdateJar(jarData);
             }
             else
             {
-                if (_controller.AddJar(jarData))
-                    _jars.Add(jarData.Name, jarData);
+                if (_dbController.AddJar(jarData))
+                    _jars[jarData.Name] = jarData;
             }
         }
         else
         {
-            _controller.NotionUpdateJar(jarData);
+            _dbController.NotionUpdateJar(jarData);
             _jars[jarData.Name] = jarData;
         }
     }
@@ -143,5 +119,23 @@ class Program
     {
         Console.WriteLine(DateTime.Now + ": " + logs);
         _streamWriter.WriteLine(DateTime.Now + ": " + logs);
+    }
+
+    void InitLog()
+    {
+        Log("Init parametres:");
+        Log($"secret: {HideSecret(secret)}");
+        Log($"dbName: {dbName}");
+        Log($"periodsec: {period_sec}");
+        Log("Urls:");
+        if (urls is null)
+        {
+            Log("Program failed parse jar`s urls");
+            return;
+        }
+        foreach (var url in urls)
+        {
+            Log($"{url}");
+        }
     }
 }
