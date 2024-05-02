@@ -31,6 +31,7 @@ namespace NotionMono.Notion
 
             TryInitDB(searchParameters, dbName);
 
+
             if (_db is null) 
             {
                 Program.Log("DatabaseController: db not found; name: " + dbName);
@@ -43,16 +44,16 @@ namespace NotionMono.Notion
             }
         }
 
-        async void TryInitDB(SearchParameters searchParameters, string dbName) 
+        void TryInitDB(SearchParameters searchParameters, string dbName) 
         {
             for (int i = 0; i < 10; i++)
             {
                 try
                 {
-                    var search = await _client.Search.SearchAsync(searchParameters);
+                    var search = _client.Search.SearchAsync(searchParameters);
 
                     Program.Log("Found jars:");
-                    foreach (var result in search.Results)
+                    foreach (var result in search.Result.Results)
                     {
                         Program.Log("Title: " + ((Database)result).Title.FirstOrDefault()?.PlainText);
                         if (result is Database && ((Database)result).Title.FirstOrDefault()?.PlainText == dbName)
