@@ -2,12 +2,7 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace NotionMono.Parser
 {
@@ -15,18 +10,15 @@ namespace NotionMono.Parser
     {
         List<string> jarURLs = new();
         public Action<JarData>? jarUpdate;
-        IWebDriver _driver;
+        ChromeDriver _driver;
+        ChromeOptions options;
         Timer? timer;
 
         public JarParser() 
         {
-            var options = new ChromeOptions();
+            options = new ChromeOptions();
             options.AddArgument("--headless");
-            options.AddArgument("--disable-notifications");
-            options.AddArgument("--disable-in-process-stack-traces");
-            options.AddArgument("--disable-logging");
-            options.AddArgument("--log-level=3");
-            options.AddArgument("--output=/dev/null");
+            options.AddArgument("--log-level=1");
             _driver = new ChromeDriver(options);
         }
 
@@ -47,11 +39,16 @@ namespace NotionMono.Parser
             // URL страницы, которую вы хотите парсить
             try
             {
-                foreach (string url in jarURLs)
+                for (int i = 0; i < jarURLs.Count; i++)
                 {
-                    JarData? jarData = parseJar(url);
+                    JarData? jarData = parseJar(jarURLs[i]);
                     if (jarData != null)
+                    {
+                        Program.Log("Check page success: " + jarURLs[i] + $"; current: {i+1}/{jarURLs.Count}");
                         jarUpdate?.Invoke((JarData)jarData);
+                    }
+                    else
+                        Program.Log("Check page failed: " + jarURLs[i] + $"; current: {i + 1}/{jarURLs.Count}");
                 }
 
             }
@@ -66,48 +63,56 @@ namespace NotionMono.Parser
             JarData jarData = new();
             jarData.Link = url;
 
-            _driver.Navigate().GoToUrl(url);
-
-            try
+            for (int i = 0; i < 3; i++)
             {
-                // Используем явное ожидание для ожидания загрузки элемента на странице
-                WebDriverWait wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
-                Func<IWebDriver, bool> waitForElement = new Func<IWebDriver, bool>((IWebDriver Web) =>
+                try
                 {
-                    Web.FindElement(By.CssSelector(".description-box"));
-                    return true;
-                });
-                wait.Until(waitForElement);
+                    _driver.Navigate().GoToUrl(url);
+                    // Используем явное ожидание для ожидания загрузки элемента на странице
+                    WebDriverWait wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
+                    Func<IWebDriver, bool> waitForElement = new Func<IWebDriver, bool>((IWebDriver Web) =>
+                    {
+                        Web.FindElement(By.CssSelector(".description-box"));
+                        return true;
+                    });
+                    wait.Until(waitForElement);
 
+                    IWebElement title = _driver.FindElement(By.CssSelector(".field.name"));
+                    //Console.WriteLine("Name: " + title.Text);
+                    jarData.Name = title.Text;
+                    IWebElement text = _driver.FindElement(By.CssSelector(".description-box"));
+                    //Console.WriteLine("Text: " + text.Text);
+                    jarData.Description = text.Text;
+                    IWebElement cost = _driver.FindElement(By.CssSelector(".stats-data-value"));
+                    //Console.WriteLine("Cost: " + cost.Text);
 
-                IWebElement title = _driver.FindElement(By.CssSelector(".field.name"));
-                //Console.WriteLine("Name: " + title.Text);
-                jarData.Name = title.Text;
-                IWebElement text = _driver.FindElement(By.CssSelector(".description-box"));
-                //Console.WriteLine("Text: " + text.Text);
-                jarData.Description = text.Text;
-                IWebElement cost = _driver.FindElement(By.CssSelector(".stats-data-value"));
-                //Console.WriteLine("Cost: " + cost.Text);
+                    string buf = cost.Text;
+                    buf = buf.Replace(" ", "");
+                    buf = buf.Replace("₴", "");
+                    if (OperatingSystem.IsWindows())
+                        buf = buf.Replace(".", ",");
+                    if (!double.TryParse(buf, out jarData.Value))
+                        Program.Log("Parse failed in parseJar");
 
-                string buf = cost.Text;
-                buf = buf.Replace(" ", "");
-                buf = buf.Replace("₴", "");
-                if (OperatingSystem.IsWindows())
-                    buf = buf.Replace(".", ",");
-                if (!double.TryParse(buf, out jarData.Value))
-                    Program.Log("Parse failed in parseJar");
-
-                IWebElement pngPath = _driver.FindElement(By.XPath("//div[@id='jar-state']//div[@class='img']"));
-                Regex regex = new Regex(@"url\(""(.+?)""\)");
-                // Поиск URL в строке CSS-кода
-                Match match = regex.Match(pngPath.GetAttribute("style"));
-                jarData.ImgPath = match.Groups[1].Value;
-                //Console.WriteLine("Image: " + match.Groups[1].Value);
-            }
-            catch (Exception ex)
-            {
-                Program.Log("Failed to load page: " + ex.Message);
-                return null;
+                    IWebElement pngPath = _driver.FindElement(By.XPath("//div[@id='jar-state']//div[@class='img']"));
+                    Regex regex = new Regex(@"url\(""(.+?)""\)");
+                    // Поиск URL в строке CSS-кода
+                    Match match = regex.Match(pngPath.GetAttribute("style"));
+                    jarData.ImgPath = match.Groups[1].Value;
+                    //Console.WriteLine("Image: " + match.Groups[1].Value);
+                    Thread.Sleep(100);
+                    break;
+                }
+                catch (NoSuchWindowException ex)
+                {
+                    _driver = new ChromeDriver(options);
+                    Program.Log("CheckPage: " + ex);
+                }
+                catch (Exception ex)
+                {
+                    Program.Log("Failed to load page: " + ex.Message);
+                    return null;
+                }
             }
 
             return jarData;
