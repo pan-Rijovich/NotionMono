@@ -1,6 +1,6 @@
-﻿using Notion.Client;
-using OpenQA.Selenium;
+﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Support.UI;
 using System.Text.RegularExpressions;
 
@@ -10,16 +10,16 @@ namespace NotionMono.Parser
     {
         List<string> jarURLs = new();
         public Action<JarData>? jarUpdate;
-        ChromeDriver _driver;
-        ChromeOptions options;
+        FirefoxDriver _driver;
+        FirefoxOptions options;
         Timer? timer;
 
         public JarParser() 
         {
-            options = new ChromeOptions();
+            options = new FirefoxOptions();
             options.AddArgument("--headless");
             options.AddArgument("--log-level=1");
-            _driver = new ChromeDriver(options);
+            _driver = new FirefoxDriver(options);
         }
 
         public void ChangeStrings(List<string> strings) 
@@ -37,24 +37,17 @@ namespace NotionMono.Parser
         {
             Program.Log("update pages");
             // URL страницы, которую вы хотите парсить
-            try
-            {
-                for (int i = 0; i < jarURLs.Count; i++)
-                {
-                    JarData? jarData = parseJar(jarURLs[i]);
-                    if (jarData != null)
-                    {
-                        Program.Log("Check page success: " + jarURLs[i] + $"; current: {i+1}/{jarURLs.Count}");
-                        jarUpdate?.Invoke((JarData)jarData);
-                    }
-                    else
-                        Program.Log("Check page failed: " + jarURLs[i] + $"; current: {i + 1}/{jarURLs.Count}");
-                }
 
-            }
-            catch (Exception ex)
+            for (int i = 0; i < jarURLs.Count; i++)
             {
-                Console.WriteLine(ex);
+                JarData? jarData = parseJar(jarURLs[i]);
+                if (jarData != null)
+                {
+                    Program.Log("Check page success: " + jarURLs[i] + $"; current: {i+1}/{jarURLs.Count}");
+                    jarUpdate?.Invoke((JarData)jarData);
+                }
+                else
+                    Program.Log("Check page failed: " + jarURLs[i] + $"; current: {i + 1}/{jarURLs.Count}");
             }
         }
 
@@ -105,7 +98,7 @@ namespace NotionMono.Parser
                 }
                 catch (NoSuchWindowException ex)
                 {
-                    _driver = new ChromeDriver(options);
+                    _driver = new FirefoxDriver(options);
                     Program.Log("CheckPage: " + ex);
                 }
                 catch (Exception ex)
@@ -120,6 +113,7 @@ namespace NotionMono.Parser
 
         public void StopTimer()
         {
+            _driver.Quit();
             timer?.Dispose();
         }
     }
