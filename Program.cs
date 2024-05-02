@@ -47,7 +47,7 @@ class Program
             }
 
             Program.Log("Init parametres:");
-            Program.Log($"secret: {prog.secret?[0..6]}");
+            Program.Log($"secret: {HideSecret(prog.secret)}");
             Program.Log($"dbName: {prog.dbName}");
             Program.Log($"periodsec: {prog.period_sec}");
             Program.Log("Urls:");
@@ -98,6 +98,13 @@ class Program
             // Вызываем Thread.Sleep для ожидания без блокировки
             Thread.Sleep(Timeout.Infinite);
         }
+    }
+
+    static string HideSecret(string? secret) 
+    {
+        if (secret is null)
+            return "";
+        return secret[0..7] + new string('*', secret.Length-8);
     }
 
     ~Program() 
