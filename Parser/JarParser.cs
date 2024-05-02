@@ -48,7 +48,11 @@ namespace NotionMono.Parser
             try
             {
                 foreach (string url in jarURLs)
-                    jarUpdate?.Invoke(parseJar(url));
+                {
+                    JarData? jarData = parseJar(url);
+                    if (jarData != null)
+                        jarUpdate?.Invoke((JarData)jarData);
+                }
 
             }
             catch (Exception ex)
@@ -57,45 +61,54 @@ namespace NotionMono.Parser
             }
         }
 
-        private JarData parseJar(string url) 
+        private JarData? parseJar(string url) 
         {
             JarData jarData = new();
             jarData.Link = url;
 
             _driver.Navigate().GoToUrl(url);
 
-            // Используем явное ожидание для ожидания загрузки элемента на странице
-            WebDriverWait wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
-            Func<IWebDriver, bool> waitForElement = new Func<IWebDriver, bool>((IWebDriver Web) =>
+            try
             {
-                Web.FindElement(By.CssSelector(".description-box"));
-                return true;
-            });
-            wait.Until(waitForElement);
+                // Используем явное ожидание для ожидания загрузки элемента на странице
+                WebDriverWait wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
+                Func<IWebDriver, bool> waitForElement = new Func<IWebDriver, bool>((IWebDriver Web) =>
+                {
+                    Web.FindElement(By.CssSelector(".description-box"));
+                    return true;
+                });
+                wait.Until(waitForElement);
 
-            IWebElement title = _driver.FindElement(By.CssSelector(".field.name"));
-            //Console.WriteLine("Name: " + title.Text);
-            jarData.Name = title.Text;
-            IWebElement text = _driver.FindElement(By.CssSelector(".description-box"));
-            //Console.WriteLine("Text: " + text.Text);
-            jarData.Description = text.Text;
-            IWebElement cost = _driver.FindElement(By.CssSelector(".stats-data-value"));
-            //Console.WriteLine("Cost: " + cost.Text);
 
-            string buf = cost.Text;
-            buf = buf.Replace(" ", "");
-            buf = buf.Replace("₴", "");
-            if(OperatingSystem.IsWindows())
-                buf = buf.Replace(".", ",");
-            if (!double.TryParse(buf, out jarData.Value))
-                Program.Log("Parse failed in parseJar");
+                IWebElement title = _driver.FindElement(By.CssSelector(".field.name"));
+                //Console.WriteLine("Name: " + title.Text);
+                jarData.Name = title.Text;
+                IWebElement text = _driver.FindElement(By.CssSelector(".description-box"));
+                //Console.WriteLine("Text: " + text.Text);
+                jarData.Description = text.Text;
+                IWebElement cost = _driver.FindElement(By.CssSelector(".stats-data-value"));
+                //Console.WriteLine("Cost: " + cost.Text);
 
-            IWebElement pngPath = _driver.FindElement(By.XPath("//div[@id='jar-state']//div[@class='img']"));
-            Regex regex = new Regex(@"url\(""(.+?)""\)");
-            // Поиск URL в строке CSS-кода
-            Match match = regex.Match(pngPath.GetAttribute("style"));
-            jarData.ImgPath = match.Groups[1].Value;
-            //Console.WriteLine("Image: " + match.Groups[1].Value);
+                string buf = cost.Text;
+                buf = buf.Replace(" ", "");
+                buf = buf.Replace("₴", "");
+                if (OperatingSystem.IsWindows())
+                    buf = buf.Replace(".", ",");
+                if (!double.TryParse(buf, out jarData.Value))
+                    Program.Log("Parse failed in parseJar");
+
+                IWebElement pngPath = _driver.FindElement(By.XPath("//div[@id='jar-state']//div[@class='img']"));
+                Regex regex = new Regex(@"url\(""(.+?)""\)");
+                // Поиск URL в строке CSS-кода
+                Match match = regex.Match(pngPath.GetAttribute("style"));
+                jarData.ImgPath = match.Groups[1].Value;
+                //Console.WriteLine("Image: " + match.Groups[1].Value);
+            }
+            catch (Exception ex)
+            {
+                Program.Log("Failed to load page: " + ex.Message);
+                return null;
+            }
 
             return jarData;
         }
