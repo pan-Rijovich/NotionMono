@@ -29,7 +29,7 @@ namespace NotionMono.Notion
             filter.Value = SearchObjectType.Database;
             searchParameters.Filter = filter;
 
-            TryInitDB(searchParameters);
+            TryInitDB(searchParameters, dbName);
 
             if (_db is null) 
             {
@@ -43,7 +43,7 @@ namespace NotionMono.Notion
             }
         }
 
-        async void TryInitDB(SearchParameters searchParameters) 
+        async void TryInitDB(SearchParameters searchParameters, string dbName) 
         {
             for (int i = 0; i < 10; i++)
             {
