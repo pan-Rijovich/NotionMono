@@ -88,31 +88,17 @@ class Program()
         return secret[0..7] + new string('*', secret.Length-8);
     }
 
-    void UpdateJar(JarData jarData) 
+    async void UpdateJar(JarData jarData) 
     {
         if (_dbController is null)
         {
             Log("Program: controller is null");
             return;
         }
-        if (!_jars.ContainsKey(jarData.Name))
-        {
-            if (_dbController.NotionCheckJar(jarData) > 0)
-            {
-                _jars.Add(jarData.Name, jarData);
-                _dbController.NotionUpdateJar(jarData);
-            }
-            else
-            {
-                if (_dbController.AddJar(jarData))
-                    _jars[jarData.Name] = jarData;
-            }
-        }
-        else
-        {
+        if (await _dbController.NotionCheckJar(jarData) > 0)
             _dbController.NotionUpdateJar(jarData);
-            _jars[jarData.Name] = jarData;
-        }
+        else
+            await _dbController.AddJar(jarData);
     }
 
     public static void Log(string logs) 

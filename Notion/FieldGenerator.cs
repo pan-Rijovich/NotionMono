@@ -33,14 +33,15 @@ namespace NotionMono.Notion
             };
         }
 
-        public static FilesPropertyValue GetFilesProperty(string url) 
+        public static FilesPropertyValue GetFilesProperty(string url, string name) 
         {
             ExternalFileWithName externalFileWithName = new()
             {
                 External = new ExternalFileWithName.Info() 
                 {
                     Url = url
-                }
+                },
+                Name = name
             };
             return new FilesPropertyValue()
             {

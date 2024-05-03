@@ -111,7 +111,7 @@ namespace NotionMono.Notion
             }
         }
 
-        public int NotionCheckJar(JarData jarData)
+        public async Task<int> NotionCheckJar(JarData jarData)
         {
             if (_db is null)
                 return -1;
@@ -120,15 +120,14 @@ namespace NotionMono.Notion
             {
                 Filter = new RichTextFilter(TitleFieldName, contains: jarData.Name)
             };
-            var task = _client?.Databases.QueryAsync(_db?.Id, param);
+            var task = await _client.Databases.QueryAsync(_db?.Id, param);
             if (task is null) 
             {
                 Program.Log("DBController: failed check jar");
                 return -1;
             }
-            task.Wait();
 
-            return task.Result.Results.Count;
+            return task.Results.Count;
         }
 
         public async void NotionUpdateJar(JarData jarData)
@@ -161,7 +160,7 @@ namespace NotionMono.Notion
                 }
                 if (GetValue(page.Properties[ImageFieldName]) is ExternalFileWithName file && file.External.Url != jarData.ImgPath)
                 {
-                    parameters.Properties.Add(ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath));
+                    parameters.Properties.Add(ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath, "Image"));
                     Program.Log($"Changed: {file.External.Url} -> {jarData.ImgPath} in {jarData.Name}");
                 }
                 if (GetValue(page.Properties[LinkFieldName]) is string link && link != jarData.Link)
@@ -179,12 +178,12 @@ namespace NotionMono.Notion
             }
         }
 
-        public bool AddJar(JarData jarData)
+        public Task AddJar(JarData jarData)
         {
             if (_db is null)
             {
                 Console.WriteLine("DB is null");
-                return false;
+                return Task.CompletedTask;
             }
 
             var creat = new PagesCreateParameters
@@ -194,7 +193,7 @@ namespace NotionMono.Notion
                 {
                     { DescriptionFieldName, FieldGenerator.GetRichText(jarData.Description) },
                     { BalanceFieldName, FieldGenerator.GetNumberProperty(jarData.Value) },
-                    { ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath) },
+                    { ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath, "Image") },
                     { TitleFieldName, FieldGenerator.GetTitle(jarData.Name) },
                     { LinkFieldName, FieldGenerator.GetUrlProperty(jarData.Link)}
                 }
@@ -204,11 +203,11 @@ namespace NotionMono.Notion
 
             if (response is not null && response.Object is ObjectType.Page)
             {
-                Program.Log($"added new jar: {jarData.Name}\ndescription: {jarData.Description}\nvalue: {jarData.Value}\nimgPath: {jarData.ImgPath}");
-                return true;
+                Program.Log($"added new jar: {jarData.Name}\ndescription: {jarData.Description}" +
+                    $"\nvalue: {jarData.Value}\nimgPath: {jarData.ImgPath}");
             }
-            else
-                return false;
+
+            return Task.CompletedTask;
         }
     }
 }
