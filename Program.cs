@@ -95,7 +95,11 @@ class Program()
             Log("Program: controller is null");
             return;
         }
-        if (!_jars.ContainsKey(jarData.Name))
+        if (_dbController.NotionCheckJar(jarData) > 0) 
+            _dbController.NotionUpdateJar(jarData);
+        else
+            _dbController.AddJar(jarData);
+/*        if (!_jars.ContainsKey(jarData.Name))
         {
             if (_dbController.NotionCheckJar(jarData) > 0)
             {
@@ -112,7 +116,7 @@ class Program()
         {
             _dbController.NotionUpdateJar(jarData);
             _jars[jarData.Name] = jarData;
-        }
+        }*/
     }
 
     public static void Log(string logs) 

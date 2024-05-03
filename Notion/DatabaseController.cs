@@ -1,5 +1,6 @@
 ﻿using Notion.Client;
 using NotionMono.Parser;
+using System.Threading.Tasks.Sources;
 
 namespace NotionMono.Notion
 {
@@ -111,7 +112,7 @@ namespace NotionMono.Notion
             }
         }
 
-        public int NotionCheckJar(JarData jarData)
+        public int AsyncNotionCheckJar(JarData jarData)
         {
             if (_db is null)
                 return -1;
@@ -161,7 +162,7 @@ namespace NotionMono.Notion
                 }
                 if (GetValue(page.Properties[ImageFieldName]) is ExternalFileWithName file && file.External.Url != jarData.ImgPath)
                 {
-                    parameters.Properties.Add(ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath));
+                    parameters.Properties.Add(ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath, "Image"));
                     Program.Log($"Changed: {file.External.Url} -> {jarData.ImgPath} in {jarData.Name}");
                 }
                 if (GetValue(page.Properties[LinkFieldName]) is string link && link != jarData.Link)
@@ -194,7 +195,7 @@ namespace NotionMono.Notion
                 {
                     { DescriptionFieldName, FieldGenerator.GetRichText(jarData.Description) },
                     { BalanceFieldName, FieldGenerator.GetNumberProperty(jarData.Value) },
-                    { ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath) },
+                    { ImageFieldName, FieldGenerator.GetFilesProperty(jarData.ImgPath, "Image") },
                     { TitleFieldName, FieldGenerator.GetTitle(jarData.Name) },
                     { LinkFieldName, FieldGenerator.GetUrlProperty(jarData.Link)}
                 }
