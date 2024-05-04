@@ -3,6 +3,16 @@ using NotionMono.Parser;
 using NotionMono.Notion;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
+using SyslogNet.Client;
+using SyslogNet.Client.Transport;
+using SyslogNet.Client.Serialization;
+using OpenQA.Selenium;
+
+class Data() 
+{
+    public ISyslogMessageSender? SyslogSender { get; set; }
+    public ISyslogMessageSerializer? syslogMessageSerializer { get; set; }
+}
 
 class Program()
 {
@@ -10,6 +20,7 @@ class Program()
     DatabaseController? _dbController;
     readonly JarParser _jarParser = new();
     static readonly StreamWriter _streamWriter = new("log.txt", append: true);
+    static Data data = new();
 
     [JsonProperty("secret")]
     public readonly string? secret;
@@ -34,7 +45,7 @@ class Program()
             prog = JsonConvert.DeserializeObject<Program>(json);
             if (prog == null)
             {
-                Log("Program load filed");
+                Log("Program load filed", true);
                 _streamWriter.Flush();
                 return;
             }
@@ -42,12 +53,12 @@ class Program()
         }
         catch (FileNotFoundException)
         {
-            Console.WriteLine("Файл не найден");
+            Console.WriteLine("File not found");
             return;
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Произошла ошибка: " + ex.Message);
+            Console.WriteLine("Parse Program error: " + ex.Message);
             return;
         }
 
@@ -58,9 +69,23 @@ class Program()
     {
         if (dbName is null || urls is null || period_sec is null) 
         {
-            Log("Program: settings parse failed");
+            Log("Program: settings parse failed", true);
             return;
         }
+
+        try 
+        {
+            data.SyslogSender = new SyslogLocalSender();
+            data.syslogMessageSerializer = new SyslogLocalMessageSerializer();
+        } 
+        catch (Exception ex) 
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        if (OperatingSystem.IsLinux() && data.syslogMessageSerializer is not null && data.SyslogSender is not null)
+            data.SyslogSender.Send(new SyslogMessage(Severity.Debug, "MonoNotion", "Test syslog"), data.syslogMessageSerializer);
+
         ClientOptions clientOptions = new()
         {
             AuthToken = secret
@@ -92,7 +117,7 @@ class Program()
     {
         if (_dbController is null)
         {
-            Log("Program: controller is null");
+            Log("Program: controller is null", true);
             return;
         }
         if (await _dbController.NotionCheckJar(jarData) > 0)
@@ -101,10 +126,12 @@ class Program()
             await _dbController.AddJar(jarData);
     }
 
-    public static void Log(string logs) 
+    public static void Log(string logs, bool isError = false) 
     {
         Console.WriteLine(DateTime.Now + ": " + logs);
         _streamWriter.WriteLine(DateTime.Now + ": " + logs);
+         if(isError && OperatingSystem.IsLinux() && data.syslogMessageSerializer is not null && data.SyslogSender is not null)
+             data.SyslogSender.Send(new SyslogMessage(Severity.Error, "MonoNotion", DateTime.Now + ": " + logs), data.syslogMessageSerializer);
     }
 
     void InitLog()

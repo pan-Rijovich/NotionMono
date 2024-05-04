@@ -30,7 +30,7 @@ namespace NotionMono.Notion
 
             if (_db is null) 
             {
-                Program.Log("DatabaseController: db not found; name: " + dbName);
+                Program.Log("DatabaseController: db not found; name: " + dbName, true);
                 return;
             }
 
@@ -59,7 +59,7 @@ namespace NotionMono.Notion
                 }
                 catch (Exception ex)
                 {
-                    Program.Log("Search DB: " + ex.Message);
+                    Program.Log("Search DB: " + ex.Message, true);
                     Thread.Sleep(TimeSpan.FromSeconds(2));
                 }
             }
@@ -74,7 +74,7 @@ namespace NotionMono.Notion
                     var task = _client?.Pages.CreateAsync(param);
                     if (task is null)
                     {
-                        Program.Log("DBController: page create failed");
+                        Program.Log("DBController: page create failed", true);
                         return new Page();
                     }
                     task.Wait();
@@ -82,7 +82,7 @@ namespace NotionMono.Notion
                 }
                 catch (Exception ex)
                 {
-                    Program.Log("Create page filed: " + ex.Message);
+                    Program.Log("Create page filed: " + ex.Message, true);
                     Thread.Sleep(TimeSpan.FromSeconds(2));
                 }
             }
@@ -174,7 +174,7 @@ namespace NotionMono.Notion
             }
             catch (Exception ex) 
             {
-                Program.Log("Exception in NotionUpdateJar: " + ex.Message);
+                Program.Log("Exception in NotionUpdateJar: " + ex.Message, true);
             }
         }
 
